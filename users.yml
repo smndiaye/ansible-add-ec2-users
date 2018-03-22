@@ -1,0 +1,36 @@
+- hosts: all
+  sudo: yes
+  user: ec2-user
+
+  vars:
+    users:
+    - smndiaye
+    - shovon 
+
+  tasks:
+    # only if needed
+  - name: "add group"
+    group:
+      name: "developer-group"
+      state: "present"
+
+  - name: "create user account and add user to group"
+    user:
+      name: "{{ item }}"
+      # only if needed otherwise default group (account name)
+      groups: "developer-group"
+    with_items: "{{ users }}"
+
+  - name: "add authorized keys"
+    authorized_key:
+      user: "{{ item }}"
+      key: "{{ lookup('file', 'files/' + item + '.key.pub') }}"
+    with_items: "{{ users }}"
+
+  - name: "allow user to sudo without password"
+    lineinfile: "dest=/etc/sudoers
+      insertafter=EOF
+      line='{{ item}} ALL=(ALL) NOPASSWD: ALL'
+      regexp='^{{ item }} .*'
+      state=present"
+    with_items: '{{ users }}'
